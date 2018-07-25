@@ -1,0 +1,60 @@
+html, body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+.container {
+	display: flex;
+	width: 100%;
+	height: 100%;
+	background: black;
+}
+
+.shrink-pain {
+	display: flex;
+	flex-direction: column;
+	width: 15%;
+	background: var(--color-pallett-0);
+}
+
+.pain {
+	margin: 5px;
+	border: 1px solid white;
+}
+
+.pain-head h1 {
+	margin: 0;
+	padding: 0 0 0 5px;
+	cursor: pointer;
+	user-select: none;
+	color: var(--color-text);
+	font-family: Arial;
+	font-size: 20px;
+	background: var(--color-pallett-5);
+}
+
+.block {
+	display: block;
+	width: 200px;
+	height: 25px;
+	background: white;
+}
+
+.code {
+	background: var(--color-pallett-1);
+	width: 60%;
+}
+
+.display {
+	background: var(--color-pallett-2);
+	width: 25%;
+}
+
+.noselect {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
