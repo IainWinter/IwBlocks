@@ -1,143 +1,149 @@
-class Point {
-    constructor(x, y) {
+var Point = /** @class */ (function () {
+    function Point(x, y) {
         this.x = x;
         this.y = y;
     }
-}
-
-class Bounds {
-    constructor(x1, y1, x2, y2) {
-        this.topLeft = new Point(x1, y1);
-        this.bottomRight = new Point(x2, y2);
+    return Point;
+}());
+var Bounds = /** @class */ (function () {
+    function Bounds(x1, y1, x2, y2) {
+        this.min = new Point(x1, y1);
+        this.max = new Point(x2, y2);
     }
-}
-
-class Workspace {
-    constructor(x1, y1, x2, y2) {
-        //List of scripts
+    Bounds.prototype.fits = function (other) {
+        return (this.min.x < other.min.x && this.max.x > other.max.x) &&
+            (this.min.y < other.min.y && this.max.y > other.max.y);
+    };
+    return Bounds;
+}());
+var Workspace = /** @class */ (function () {
+    function Workspace(bounds) {
+        this.bounds = bounds;
         this.scripts = [];
-
-        //Bounds of workspace
-        this.bounds = new Bounds(x1, y1, x2, y2);
     }
-
-    createBlock() {
-        let block = new Block(0, 0, 0, 0, 0);
-        //if not near other blocks
-        //create new script
-        //else
-        //add to nearest script / nearest block
-        this.scripts.push(new BlockScript());
-    }
-}
-
-class BlockScript {
-    constructor() {
+    Workspace.prototype.dropBlock = function (block) {
+        var blockContained = this.bounds.fits(block.bounds);
+        if (blockContained) {
+            var script = new BlockScript();
+            script.addToStart(block);
+            this.scripts.push(script);
+        }
+        return blockContained;
+        //check if is in bounds
+        //if is check if near blockscript
+        //if is check which block is it is near and add it to the script
+        //if not create new blockscript and add block to it
+        //return true
+        //if not return false
+    };
+    return Workspace;
+}());
+var BlockScript = /** @class */ (function () {
+    function BlockScript() {
         this.head = null;
         this.tail = null;
         this.bounds = new Bounds(0, 0, 0, 0);
     }
-
-    updateBounds() {
-        let runner = this.head;
-        let x1, y1, x2, y2;
-        while (runner.next) {
-            let tl = runner.topLeft;
-            let br = runner.bottomRight;
-            if (tl.x < x1) x1 = tl.x;
-            if (tl.y < y1) y1 = tl.y;
-            if (br.x > x2) y2 = br.x;
-            if (br.y > y2) y2 = br.y;
+    BlockScript.prototype.copy = function () {
+        var blockScript = new BlockScript();
+        blockScript.head = this.head;
+        blockScript.tail = this.tail;
+        blockScript.bounds = this.bounds;
+        return blockScript;
+    };
+    BlockScript.prototype.reCalcBounds = function () {
+        var runner = this.head;
+        var min = this.head.bounds.min;
+        var max = this.head.bounds.max;
+        var minX, minY, maxX, maxY;
+        while (runner.next != null) {
+            min = runner.bounds.min;
+            max = runner.bounds.max;
+            if (min.x < minX)
+                minX = min.x;
+            if (min.y < minY)
+                minY = min.y;
+            if (max.x > maxX)
+                maxX = max.x;
+            if (max.x > maxY)
+                maxY = max.y;
         }
-
-        this.bounds = new Bounds(x1, y1, x2, y2);
-    }
-
-    addToEnd(block) {
+        this.bounds.min = min;
+        this.bounds.max = max;
+    };
+    BlockScript.prototype.addToEnd = function (block) {
         block.previous = this.tail;
-        if (this.tail) {
+        if (this.tail != null) {
             this.tail.next = block;
-        } else {
-            this.head = block; 
         }
-
+        else {
+            this.head = block;
+        }
         this.tail = block;
-        updateBounds();
-    }
-
-    addToStart(block) {
+        this.reCalcBounds();
+    };
+    BlockScript.prototype.addToStart = function (block) {
         block.next = this.head;
         if (this.head) {
             this.head.previous = block;
-        } else {
+        }
+        else {
             this.tail = block;
         }
-
         this.head = block;
-        updateBounds();
-    }
-
-    //Left is returned. The original script is right
-    split(block) {
-        let runner = this.head;
-        let i = 0;
+        this.reCalcBounds();
+    };
+    //insert
+    BlockScript.prototype.split = function (block) {
+        var runner = this.head;
+        var i = 0;
         while (runner != block) {
             if (runner == this.tail) {
-                alert("Block is not in script");
+                //Block is not in script
                 return null;
             }
-
             runner = runner.next;
             i++;
         }
-
-        let left = $.extend(this);
-        let leftRunner = left.head;
+        var left = this.copy();
+        var leftRunner = left.head;
         for (; i > 1; i--) {
             leftRunner = leftRunner.next;
         }
-
+        //sevor connections
         //left
         leftRunner.next = null;
         //right
         runner.previous = null;
         this.head = runner;
-
         return left;
-    }
-}
-
-class Block {
-    constructor(value, x1, y1, x2, y2) {
-        //The next block in the script
+    };
+    return BlockScript;
+}());
+var Block = /** @class */ (function () {
+    function Block(value, bounds) {
         this.next = null;
-
-        //The previous block in the script
         this.previous = null;
-
-        //The position in the workspace
-        this.bounds = new Bounds(x1, y1, x2, y2);
-
-        //Temp value going to be function later
-        this.value = value;
+        this["function"] = value;
+        this.bounds = bounds;
+        var display = document.createElement("div");
+        display.style.position = "absolute";
+        display.style.top = bounds.min.x + "px";
+        display.style.left = bounds.min.y + "px";
+        display.style.width = bounds.max.x + "px";
+        display.style.height = bounds.max.y + "px";
+        display.style.backgroundColor = "#ccc";
+        var page = document.getElementById("page");
+        page.appendChild(display);
     }
+    return Block;
+}());
+function test() {
+    var workspaceBounds = new Bounds(0, 0, 500, 500);
+    var workspace = new Workspace(workspaceBounds);
+    var block1 = new Block("Test block 1", new Bounds(10, 10, 100, 20));
+    var block2 = new Block("Test block 2", new Bounds(200, 200, 200, 40));
+    workspace.dropBlock(block1);
+    workspace.dropBlock(block2);
 }
-
-$(function () {
-    let w = new Workspace();
-    w.createBlock();
-
-
-    let bs = new BlockScript();
-    let b = new Block(3);
-
-    bs.addToStart(new Block(1));
-    bs.addToEnd(new Block(2));
-    bs.addToEnd(b);
-    bs.addToEnd(new Block(4));
-    bs.addToStart(new Block(0));
-
-    console.log(bs);
-
-    let bs2 = bs.split(b);
-});
+test();
